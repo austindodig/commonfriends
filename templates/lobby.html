@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lobby</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+</head>
+<body>
+    <h1>Game Lobby</h1>
+    <h3>Game Code: {{ code }}</h3>
+
+    <div>
+        <label for="player_name">Enter your name:</label>
+        <input type="text" id="player_name">
+        <button onclick="addPlayer()">Add Player</button>
+    </div>
+
+    <h3>Players:</h3>
+    <ul id="player_list">
+        {% for player in players %}
+            <li>{{ player }}</li>
+        {% endfor %}
+    </ul>
+
+    <button onclick="beginGame()">Begin Game</button>
+
+    <script>
+        const socket = io.connect();
+        const room = "{{ code }}";
+
+        // Function to add player
+        function addPlayer() {
+            const name = document.getElementById('player_name').value.trim();
+            if (name) {
+                socket.emit('add_player', { room: room, name: name });
+            } else {
+                alert("Name cannot be empty.");
+            }
+        }
+
+        // Listen for updated player list
+        socket.on('update_players', data => {
+            const playerList = document.getElementById('player_list');
+            playerList.innerHTML = ""; // Clear existing list
+            data.players.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = player;
+                playerList.appendChild(li);
+            });
+        });
+
+        // Handle errors
+        socket.on('error', data => {
+            alert(data.message);
+        });
+
+        // Function to begin the game
+        function beginGame() {
+            socket.emit('begin_game', { room: room });
+        }
+
+        // Navigate to setup screen
+        socket.on('navigate_to_setup', data => {
+            window.location.href = `/setup/${data.room}`;
+        });
+    </script>
+</body>
+</html>

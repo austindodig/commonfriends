@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Setup Common Friends</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+</head>
+<body>
+    <h1>Setup Common Friends</h1>
+    <p>Enter the names of 5 common friends:</p>
+
+    <form id="friends_form">
+        <label>Friend 1:</label> <input type="text" id="friend1" required><br>
+        <label>Friend 2:</label> <input type="text" id="friend2" required><br>
+        <label>Friend 3:</label> <input type="text" id="friend3" required><br>
+        <label>Friend 4:</label> <input type="text" id="friend4" required><br>
+        <label>Friend 5:</label> <input type="text" id="friend5" required><br>
+        <button type="button" onclick="submitFriends()">Submit</button>
+    </form>
+
+    <script>
+        const socket = io.connect();
+        const room = "{{ code }}";
+
+        // Join the game room
+        socket.emit('join', { room: room });
+
+        // Submit the friends list
+        function submitFriends() {
+            const friends = [
+                document.getElementById('friend1').value.trim(),
+                document.getElementById('friend2').value.trim(),
+                document.getElementById('friend3').value.trim(),
+                document.getElementById('friend4').value.trim(),
+                document.getElementById('friend5').value.trim()
+            ];
+
+            if (friends.every(friend => friend)) {
+                console.log("Emitting submit_friends:", { room: room, friends: friends });
+                socket.emit('submit_friends', { room: room, friends: friends });
+            } else {
+                alert("Please enter all 5 friends.");
+            }
+        }
+
+        // Navigate to Round Start (for > 2 players)
+        socket.on('navigate_to_round_start', data => {
+            console.log("Navigating to Round Start:", data);
+            window.location.href = `/round_start/${data.room}`;
+        });
+
+        // Navigate to Gameplay (for exactly 2 players)
+        socket.on('navigate_to_gameplay', data => {
+            console.log("Navigating to Gameplay:", data);
+            window.location.href = `/gameplay/${data.room}`;
+        });
+
+        // Handle errors
+        socket.on('error', message => {
+            alert(message.message);
+        });
+    </script>
+</body>
+</html>

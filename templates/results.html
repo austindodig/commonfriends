@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Results</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+</head>
+<body>
+    <h1>Round Results</h1>
+
+    <!-- Display Judge's Guess -->
+    <h3>{{ judge }}'s Guess: {{ judge_guess }}</h3>
+
+    <!-- Display Targeted Player's Selected Friend -->
+    <h3>{{ targeted_player }}'s Selected Friend: {{ selected_friend }}</h3>
+
+    <!-- Correct or Incorrect Guess Message -->
+    {% if match %}
+        <h3 style="color: green;">Correct Guess! Point awarded to {{ judge }}.</h3>
+    {% else %}
+        <h3 style="color: red;">Incorrect Guess! Point awarded to {{ targeted_player }}.</h3>
+    {% endif %}
+
+    <!-- Display Updated Scores -->
+    <h3>Scores:</h3>
+    <ul>
+        {% for player, score in scores.items() %}
+            <li>{{ player }}: {{ score }}</li>
+        {% endfor %}
+    </ul>
+
+    <!-- Start New Round -->
+    <button id="start_new_round">Start New Round</button>
+
+    <script>
+        const socket = io();
+        const room = "{{ code }}";
+
+        // Confirm Socket.IO connection
+        socket.on('connect', () => {
+            console.log("Socket.IO connected successfully.");
+            socket.emit('join', { room: room });
+            console.log(`Joined room: ${room}`);
+        });
+
+        // Emit the start new round event
+        document.getElementById('start_new_round').onclick = () => {
+            console.log("Starting new round...");
+            socket.emit('start_new_round', { room: room });
+        };
+
+        // Listen for navigation to gameplay (2-player games)
+        socket.on('navigate_to_gameplay', (data) => {
+            console.log("Received navigate_to_gameplay event. Navigating...");
+            window.location.href = `/gameplay/${data.room}`;
+            setTimeout(() => {
+                window.location.replace(`/gameplay/${data.room}`); // Fallback
+            }, 500);
+        });
+
+        // Listen for navigation to round start (3+ player games)
+        socket.on('navigate_to_round_start', (data) => {
+            console.log("Received navigate_to_round_start event. Navigating...");
+            window.location.href = `/round_start/${data.room}`;
+            setTimeout(() => {
+                window.location.replace(`/round_start/${data.room}`); // Fallback
+            }, 500);
+        });
+
+        // Error handling
+        socket.on('error', (data) => {
+            console.error("Error:", data.message);
+            alert("Error: " + data.message);
+        });
+
+        // Debug any unexpected events
+        socket.onAny((event, ...args) => {
+            console.log(`Unexpected event received: ${event}`, args);
+        });
+    </script>
+</body>
+</html>

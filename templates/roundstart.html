@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Round Start</title>
+        <!-- Add the Socket.IO library -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    </head>
+    
+<body>
+    <h1>Start Round</h1>
+    <h2>Current Player: {{ judge }}</h2>
+    <h3>Question: {{ question }}</h3>
+
+    {% if players|length > 2 %}
+    <h3>Select a Player to Target:</h3>
+    <ul>
+        {% for player in players %}
+            {% if player != judge %}
+                <li>
+                    <button onclick="selectTarget('{{ player }}')">{{ player }}</button>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Automatically assigning target...</p>
+    <script>
+        window.location.href = `/gameplay/{{ code }}`;
+    </script>
+    {% endif %}
+
+    <script>
+        const socket = io();
+        const room = "{{ code }}";  // Ensure this is defined at the top of the script
+        console.log("Room code:", room);
+    
+        // Join the game room when the page loads
+        socket.emit('join', { room: room });
+        console.log("Joined room:", room);
+    
+        // Emit when the judge selects a player to target
+        function selectTarget(player) {
+            console.log("Emitting 'target_selected' event. Target: ", player, "Room: ", room);
+            socket.emit('target_selected', { room: room, targeted_player: player });
+        }
+    
+        // Listen for navigation to gameplay
+        socket.on('navigate_to_gameplay', (data) => {
+            console.log("Navigating to gameplay...");
+            window.location.href = `/gameplay/${data.room}`;
+        });
+    
+        // Handle errors
+        socket.on('error', (data) => {
+            console.error("Error received:", data.message);
+            alert("Error: " + data.message);
+        });
+    
+        // Debug connection
+        socket.on('connect', () => {
+            console.log("Socket.IO connected successfully.");
+        });
+    </script>
+    
+    
+    
+    
+</body>
+</html>

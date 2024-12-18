@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game Over</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+</head>
+<body>
+    <h1>Game Over!</h1>
+    <h2>Winner: {{ winner }} 🎉</h2>
+    <h3>Final Scores:</h3>
+    <ul>
+        {% for player, score in scores.items() %}
+            <li>{{ player }}: {{ score }}</li>
+        {% endfor %}
+    </ul>
+    <a href="/">Start New Game</a>
+</body>
+</html>

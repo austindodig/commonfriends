@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Game Home</title>
+</head>
+<body>
+    <h1>Welcome to the Game!</h1>
+
+    <!-- Form to Create a New Game -->
+    <form method="POST">
+        <button type="submit" name="action" value="create">Create Game</button>
+    </form>
+
+    <h3>Or Join an Existing Game:</h3>
+    <!-- Form to Join an Existing Game -->
+    <form method="POST">
+        <input type="text" name="code" placeholder="Enter Game Code" required>
+        <button type="submit" name="action" value="join">Join Game</button>
+    </form>
+</body>
+</html>

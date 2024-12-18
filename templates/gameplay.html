@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Gameplay</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+</head>
+<body>
+    <h1>{{ targeted_player }}, Question: {{ question }}</h1>
+
+    <h3>Select a Friend:</h3>
+    {% for friend in friends %}
+        <button onclick="selectFriend('{{ friend }}')">{{ friend }}</button>
+    {% endfor %}
+
+    <h3>Scores:</h3>
+    <ul>
+        {% for player, score in scores.items() %}
+            <li>{{ player }}: {{ score }}</li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        const socket = io.connect();
+        const room = "{{ code }}";
+
+        // Join the game room
+        socket.emit('join', { room: room });
+        console.log("Joined room:", room);
+
+        // Function to emit friend selection
+        function selectFriend(friend) {
+            console.log("Friend selected:", friend);
+            socket.emit('friend_selected', { room: room, friend: friend });
+        }
+
+        // Listen for navigation to judge guess screen
+        socket.on('navigate_to_judge_guess', data => {
+            console.log("Received navigate_to_judge_guess event for room:", data.room);
+            window.location.href = `/judge_guess/${data.room}`;
+        });
+
+        // Handle errors from the server
+        socket.on('error', message => {
+            console.error("Error received:", message.message);
+            alert(message.message);
+        });
+
+        // Debug: Confirm the connection
+        socket.on('connect', () => {
+            console.log("Socket.IO connected successfully.");
+        });
+    </script>
+</body>
+</html>
