@@ -352,11 +352,34 @@ def handle_target_selected(data):
         for handler in logger.handlers:
             handler.flush()
 
+@app.route('/instructions')
+def instructions():
+    return render_template('instructions.html')
+
+@app.route('/reset_game/<code>')
+def reset_game(code):
+    if code in games:
+        logger = get_logger(code)
+        logger.info(f"Game reset for room {code}")
+        
+        # Reset the game state but keep the players
+        games[code]['points'] = {player: 0 for player in games[code]['players']}
+        games[code]['judge_index'] = 0
+        games[code]['targeted_player'] = ''
+        games[code]['current_question'] = ''
+        games[code]['selected_friend'] = ''
+        games[code]['judge_guess'] = ''
+        
+        # Use socketio.emit instead of emit
+        socketio.emit('game_reset', {'room': code}, to=code)
+        
+        return redirect(url_for('lobby', code=code))
+    return "<h3>Game not found!</h3>", 404
 
 
 
 if __name__ == "__main__":
-    socketio.run(app, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=False)
+    #socketio.run(app, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=False)
 
-    #socketio.run(app, host='127.0.0.1', port=5000, debug=True)
+    socketio.run(app, host='127.0.0.1', port=5000, debug=True)
 

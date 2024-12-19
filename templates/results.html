@@ -82,6 +82,12 @@
         socket.onAny((event, ...args) => {
             console.log(`Unexpected event received: ${event}`, args);
         });
+
+        socket.on('game_reset', (data) => {
+    console.log("Game reset. Navigating to lobby...");
+    window.location.href = `/lobby/${data.room}`;
+});
+
     </script>
 </body>
 </html>
