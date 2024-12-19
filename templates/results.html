@@ -57,6 +57,12 @@
             }, 500);
         });
 
+                // Listen for end game navigation
+        socket.on('navigate_to_end_game', (data) => {
+            console.log("Game over. Winner:", data.winner);
+            window.location.href = `/end_game/${data.room}`;
+        });
+
         // Listen for navigation to round start (3+ player games)
         socket.on('navigate_to_round_start', (data) => {
             console.log("Received navigate_to_round_start event. Navigating...");

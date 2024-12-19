@@ -9,7 +9,8 @@
 <body>
     <h1>Start Round</h1>
     <h2>Current Player: {{ judge }}</h2>
-    <h3>Question: {{ question }}</h3>
+    <h3>Question: <span id="question">{{ question }}</span></h3>
+
 
     {% if players|length > 2 %}
     <h3>Select a Player to Target:</h3>
@@ -40,9 +41,10 @@
     
         // Emit when the judge selects a player to target
         function selectTarget(player) {
-            console.log("Emitting 'target_selected' event. Target: ", player, "Room: ", room);
-            socket.emit('target_selected', { room: room, targeted_player: player });
-        }
+        console.log("Emitting 'target_selected' event. Target:", player, "Room:", room);
+        socket.emit('target_selected', { room: room, targeted_player: player });
+    }
+
     
         // Listen for navigation to gameplay
         socket.on('navigate_to_gameplay', (data) => {
@@ -60,6 +62,23 @@
         socket.on('connect', () => {
             console.log("Socket.IO connected successfully.");
         });
+
+    // Join the game room
+    socket.emit('join', { room: room });
+    console.log("Joined room:", room);
+
+    // Listen for the same question to be updated across all players
+    socket.on('update_question', data => {
+        console.log("Received updated question:", data.question);
+        document.getElementById('question').innerText = data.question;
+    });
+
+    // Listen for navigation to the end game
+socket.on('navigate_to_end_game', (data) => {
+    console.log("Game over! Navigating to end game...");
+    window.location.href = `/end_game/${data.room}`;
+});
+
     </script>
     
     

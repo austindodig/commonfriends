@@ -21,14 +21,19 @@ if not os.path.exists(LOG_DIR):
 def get_logger(game_code):
     logger = logging.getLogger(game_code)
     if not logger.handlers:
-        log_file = os.path.join(LOG_DIR, f"game_{game_code}.log")
+        # Add a timestamp to the log filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')  # Format: YYYYMMDD_HHMMSS
+        log_file = os.path.join(LOG_DIR, f"{timestamp}_game_{game_code}.log")
+
         handler = logging.FileHandler(log_file)
         handler.setLevel(logging.INFO)
         formatter = logging.Formatter('%(asctime)s - %(message)s')
         handler.setFormatter(formatter)
+
         logger.addHandler(handler)
         logger.setLevel(logging.INFO)
     return logger
+
 
 # Load questions from questions.txt
 with open('questions.txt', 'r') as f:
@@ -76,20 +81,38 @@ def lobby(code):
 def setup(code):
     if code not in games:
         return "<h3>Game not found!</h3>", 404
+
+    game = games[code]
+
+    # Set the first question if not already set
+    if not game['current_question']:
+        game['current_question'] = get_random_question()
+
     return render_template('setup.html', code=code)
 
 @app.route('/round_start/<code>')
 def round_start(code):
     if code not in games:
         return "<h3>Game not found!</h3>", 404
+
     game = games[code]
     judge = game['players'][game['judge_index']]
-    if len(game['players']) == 2:  # Auto-assign target and navigate to gameplay for 2 players
-        game['targeted_player'] = game['players'][1 - game['judge_index']]
-        return redirect(url_for('gameplay', code=code))
+
+    # Assign targeted player if not set (first round)
+    if not game['targeted_player']:
+        if len(game['players']) == 2:  # Two-player game
+            game['targeted_player'] = game['players'][1 - game['judge_index']]
+        else:  # Multi-player game
+            game['targeted_player'] = game['players'][(game['judge_index'] + 1) % len(game['players'])]
+
     return render_template(
-        'roundstart.html', code=code, judge=judge, question=get_random_question(), players=game['players']
+        'roundstart.html', 
+        code=code, 
+        judge=judge, 
+        question=game['current_question'], 
+        players=game['players']
     )
+
 
 @app.route('/gameplay/<code>')
 def gameplay(code):
@@ -97,41 +120,41 @@ def gameplay(code):
         return "<h3>Game not found!</h3>", 404
 
     game = games[code]
-    players = game['players']
-    judge_index = game['judge_index']
 
-    # Dynamically determine the targeted player based on judge_index
-    targeted_player = players[1 - judge_index] if len(players) == 2 else game.get('targeted_player')
 
-    # Ensure a new question is generated
-    game['current_question'] = get_random_question()
+    targeted_player = game['targeted_player']
+    question = game['current_question']
 
     return render_template(
         'gameplay.html',
         code=code,
         targeted_player=targeted_player,
-        question=game['current_question'],
+        question=game['current_question'  ],
         friends=game['friends'],
         scores=game['points']
     )
+
+
 
 
 @app.route('/judge_guess/<code>')
 def judge_guess(code):
     if code not in games:
         return "<h3>Game not found!</h3>", 404
+
     game = games[code]
     judge = game['players'][game['judge_index']]
+
     return render_template(
         'judge_guess.html',
         code=code,
         judge=judge,
         targeted_player=game['targeted_player'],
+        question=game['current_question'],  # Pass the current question
         friends=game['friends'],
         scores=game['points']
     )
 
-# Socket.IO Logic
 @socketio.on('join')
 def handle_join(data):
     room = data['room']
@@ -139,6 +162,9 @@ def handle_join(data):
         join_room(room)
         logger = get_logger(room)
         logger.info(f"User joined room {room}")
+
+        # Send the current question to all players
+        emit('update_question', {'question': games[room]['current_question']}, room=room)
         emit('update_players', {'players': games[room]['players']}, room=room)
 
 @socketio.on('add_player')
@@ -177,8 +203,20 @@ def handle_begin_game(data):
     room = data['room']
     logger = get_logger(room)
     if room in games and len(games[room]['players']) >= 2:
+        game = games[room]
+        
+        # Pre-assign the first round's targeted player
+        if len(game['players']) == 2:  # Two-player game
+            game['targeted_player'] = game['players'][1 - game['judge_index']]
+        else:  # Multi-player game, set to first non-judge player
+            game['targeted_player'] = game['players'][(game['judge_index'] + 1) % len(game['players'])]
+
+        # Set the initial question
+        game['current_question'] = get_random_question()
+
+        logger.info(f"Game started in room {room}, initial targeted player: {game['targeted_player']}")
         emit('navigate_to_setup', {'room': room}, room=room)
-        logger.info(f"Game started in room {room}")
+
         for handler in logger.handlers:
             handler.flush()
     else:
@@ -203,29 +241,41 @@ def end_game(code):
     game = games[code]
     winner = max(game['points'], key=game['points'].get)
     return render_template('end_game.html', code=code, winner=winner, scores=game['points'])
+
 @socketio.on('judge_guess')
 def handle_judge_guess(data):
     room = data['room']
     guess = data['guess']
     logger = get_logger(room)
+
     if room in games:
         game = games[room]
         game['judge_guess'] = guess
         match = guess == game['selected_friend']
-        
-        # Update points based on match
+
+        # Update points based on guess
         if match:
             game['points'][game['players'][game['judge_index']]] += 1
         else:
             game['points'][game['targeted_player']] += 1
 
-        # Log the round result
+        # Log the result
         logger.info(f"Judge guessed: {guess} in room {room}. Match: {match}")
-        
-        # Force-update the current state
+
+        # Check for a winner (10 points)
+        for player, points in game['points'].items():
+            if points >= 10:
+                logger.info(f"Game over! {player} has reached 10 points in room {room}")
+                emit('navigate_to_end_game', {'room': room}, room=room)  # Emit event to clients
+                return  # Stop further execution to avoid conflicting emits
+
+        # Proceed to results page if no winner
         emit('navigate_to_results', {'room': room}, room=room)
+        logger.info(f"Navigating to results for room {room}")
+
         for handler in logger.handlers:
             handler.flush()
+
 
 @app.route('/results/<code>')
 def results(code):
@@ -258,29 +308,29 @@ def handle_start_new_round(data):
         # Rotate the judge index cyclically
         game['judge_index'] = (game['judge_index'] + 1) % len(game['players'])
 
-        # Determine targeted player and new question
-        if len(game['players']) == 2:
-            # For 2-player games, automatically rotate targeted player
-            game['targeted_player'] = game['players'][1 - game['judge_index']]
-            game['current_question'] = get_random_question()
+        # Set a new question only once here
+        game['current_question'] = get_random_question()
 
+        if len(game['players']) == 2:
+            game['targeted_player'] = game['players'][1 - game['judge_index']]
             logger.info(f"New round (2 players): Judge: {game['players'][game['judge_index']]}, "
                         f"Targeted Player: {game['targeted_player']}, "
                         f"Question: {game['current_question']}")
-            print("Emitting navigate_to_gameplay")  # Debug print
+
+            # Emit the updated question to all clients
+            emit('update_question', {'question': game['current_question']}, room=room)
             emit('navigate_to_gameplay', {'room': room}, room=room)
         else:
-            # For multi-player games, reset targeted player for manual selection
             game['targeted_player'] = ''
-            game['current_question'] = get_random_question()
-
             logger.info(f"New round (multi-player): Judge: {game['players'][game['judge_index']]}, "
                         f"Question: {game['current_question']}. Waiting for target selection.")
-            print("Emitting navigate_to_round_start")  # Debug print
+            emit('update_question', {'question': game['current_question']}, room=room)
             emit('navigate_to_round_start', {'room': room}, room=room)
 
         for handler in logger.handlers:
             handler.flush()
+
+
 
 @socketio.on('target_selected')
 def handle_target_selected(data):
@@ -290,23 +340,23 @@ def handle_target_selected(data):
 
     if room in games:
         game = games[room]
-        game['targeted_player'] = targeted_player  # Update the targeted player
-        game['current_question'] = get_random_question()  # Ensure new question for the round
+        game['targeted_player'] = targeted_player  # Update targeted player
 
         logger.info(f"Target player selected: {targeted_player} in room {room}")
-        
-        # Emit navigation to gameplay
+
+        # Emit the already set question to all clients
+        emit('update_question', {'question': game['current_question']}, room=room)
         emit('navigate_to_gameplay', {'room': room}, room=room)
         logger.info(f"Emitting navigate_to_gameplay for room {room}")
 
         for handler in logger.handlers:
             handler.flush()
-    else:
-        emit('error', {'message': 'Game room not found.'})
 
 
 
 
 if __name__ == "__main__":
-    socketio.run(app, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=False)
+    #socketio.run(app, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=False)
+
+    socketio.run(app, host='127.0.0.1', port=5000, debug=True)
 

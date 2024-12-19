@@ -5,7 +5,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
 </head>
 <body>
+    
     <h1>{{ judge }}, Guess who {{ targeted_player }} selected!</h1>
+    <h3>Question: {{ question }}</h3>
+
     <h3>Select a Friend:</h3>
     {% for friend in friends %}
         <button onclick="makeGuess('{{ friend }}')">{{ friend }}</button>
