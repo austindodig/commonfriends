@@ -308,7 +308,7 @@ def handle_judge_guess(data):
 
         # Check for a winner (10 points)
         for player, points in game['points'].items():
-            if points >= 2:
+            if points >= 10:
                 logger.info(f"Game over! {player} has reached 10 points in room {room}")
                 emit('navigate_to_end_game', {'room': room, 'winner': player, 'scores': game['points']}, room=room)
                 return  # Stop further execution to avoid conflicting emits
