@@ -42,6 +42,8 @@ with open('questions.txt', 'r') as f:
 def get_random_question():
     return random.choice(questions)
 
+
+
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
@@ -97,6 +99,7 @@ def round_start(code):
 
     game = games[code]
     judge = game['players'][game['judge_index']]
+    game['random_friends'] = random.sample(game['friends'], min(5, len(game['friends'])))
 
     # Assign targeted player if not set (first round)
     if not game['targeted_player']:
@@ -110,7 +113,8 @@ def round_start(code):
         code=code, 
         judge=judge, 
         question=game['current_question'], 
-        players=game['players']
+        players=game['players'],
+        friends=game['random_friends']
     )
 
 
@@ -120,20 +124,14 @@ def gameplay(code):
         return "<h3>Game not found!</h3>", 404
 
     game = games[code]
-
-
-    targeted_player = game['targeted_player']
-    question = game['current_question']
-
     return render_template(
         'gameplay.html',
         code=code,
-        targeted_player=targeted_player,
-        question=game['current_question'  ],
-        friends=game['friends'],
+        targeted_player=game['targeted_player'],
+        question=game['current_question'],
+        friends=game['random_friends'],  # Use the subset
         scores=game['points']
     )
-
 
 
 
@@ -150,11 +148,10 @@ def judge_guess(code):
         code=code,
         judge=judge,
         targeted_player=game['targeted_player'],
-        question=game['current_question'],  # Pass the current question
-        friends=game['friends'],
+        question=game['current_question'], 
+        friends=game['random_friends'],  # Use the subset
         scores=game['points']
     )
-
 @socketio.on('join')
 def handle_join(data):
     room = data['room']
@@ -188,7 +185,7 @@ def handle_submit_friends(data):
     room = data['room']
     friends = data['friends']
     logger = get_logger(room)
-    if room in games and len(friends) == 5:  # Ensure exactly 5 friends are submitted
+    if room in games and len(friends) >= 5:  # Ensure exactly 5 friends are submitted
         games[room]['friends'] = friends
         emit('navigate_to_round_start', {'room': room}, room=room)
         logger.info(f"Friends list submitted in room {room}: {friends}")
@@ -308,22 +305,27 @@ def handle_start_new_round(data):
         # Rotate the judge index cyclically
         game['judge_index'] = (game['judge_index'] + 1) % len(game['players'])
 
-        # Set a new question only once here
+        # Set a new question
         game['current_question'] = get_random_question()
+
+        # Regenerate a new random set of friends for the round
+        game['random_friends'] = random.sample(game['friends'], min(5, len(game['friends'])))
 
         if len(game['players']) == 2:
             game['targeted_player'] = game['players'][1 - game['judge_index']]
             logger.info(f"New round (2 players): Judge: {game['players'][game['judge_index']]}, "
                         f"Targeted Player: {game['targeted_player']}, "
-                        f"Question: {game['current_question']}")
+                        f"Question: {game['current_question']}, "
+                        f"Random Friends: {game['random_friends']}")
 
-            # Emit the updated question to all clients
+            # Emit the updated question and random friends to all clients
             emit('update_question', {'question': game['current_question']}, room=room)
             emit('navigate_to_gameplay', {'room': room}, room=room)
         else:
             game['targeted_player'] = ''
             logger.info(f"New round (multi-player): Judge: {game['players'][game['judge_index']]}, "
-                        f"Question: {game['current_question']}. Waiting for target selection.")
+                        f"Question: {game['current_question']}, "
+                        f"Random Friends: {game['random_friends']}. Waiting for target selection.")
             emit('update_question', {'question': game['current_question']}, room=room)
             emit('navigate_to_round_start', {'room': room}, room=room)
 
@@ -352,34 +354,12 @@ def handle_target_selected(data):
         for handler in logger.handlers:
             handler.flush()
 
-@app.route('/instructions')
-def instructions():
-    return render_template('instructions.html')
-
-@app.route('/reset_game/<code>')
-def reset_game(code):
-    if code in games:
-        logger = get_logger(code)
-        logger.info(f"Game reset for room {code}")
-        
-        # Reset the game state but keep the players
-        games[code]['points'] = {player: 0 for player in games[code]['players']}
-        games[code]['judge_index'] = 0
-        games[code]['targeted_player'] = ''
-        games[code]['current_question'] = ''
-        games[code]['selected_friend'] = ''
-        games[code]['judge_guess'] = ''
-        
-        # Use socketio.emit instead of emit
-        socketio.emit('game_reset', {'room': code}, to=code)
-        
-        return redirect(url_for('lobby', code=code))
-    return "<h3>Game not found!</h3>", 404
 
 
 
 if __name__ == "__main__":
     #socketio.run(app, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=False)
 
+    
     socketio.run(app, host='127.0.0.1', port=5000, debug=True)
 

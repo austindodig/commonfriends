@@ -19,12 +19,7 @@
             <li>{{ player }}: {{ score }}</li>
         {% endfor %}
     </ul>
-    <div style="position: fixed; bottom: 20px; right: 20px;">
-        <a href="/reset_game/{{ code }}" style="text-decoration: none;">
-            <button style="background-color: red; color: white;">Reset Game</button>
-        </a>
-    </div>
-    
+
     <script>
 const socket = io.connect();
 const room = "{{ code }}";
@@ -68,6 +63,7 @@ socket.on('navigate_to_end_game', (data) => {
     console.log("Game over! Navigating to end game...");
     window.location.href = `/end_game/${data.room}`;
 });
+
 
 
     </script>

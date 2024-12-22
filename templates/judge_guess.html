@@ -45,12 +45,7 @@
             console.log("Connected to Socket.IO for judge guess screen.");
             socket.emit('join', { room: room }); // Rejoin the room if needed
         });
-    // Listen for navigation to end game
-        socket.on('navigate_to_end_game', (data) => {
-            console.log("Navigating to end game...");
-            window.location.href = `/end_game/${data.room}`;
-        });
-
+    
         // Handle errors
         socket.on('error', (data) => {
             console.error("Error received:", data.message);
