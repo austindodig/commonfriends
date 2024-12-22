@@ -21,12 +21,14 @@
         {% endfor %}
     </ul>
 
-    <button onclick="beginGame()">Begin Game</button>
+    <button id="begin-game-button" onclick="beginGame()">Begin Game</button>
 
     <script>
         const socket = io.connect();
         const room = "{{ code }}";
-
+        
+        // Ensure clients join the room
+        socket.emit('join', { room: room });
         // Function to add player
         function addPlayer() {
             const name = document.getElementById('player_name').value.trim();
@@ -55,6 +57,7 @@
 
         // Function to begin the game
         function beginGame() {
+            console.log("Begin Game button clicked for room:", room);
             socket.emit('begin_game', { room: room });
         }
 

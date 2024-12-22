@@ -51,7 +51,31 @@
             console.error("Error received:", data.message);
             alert(data.message);
         });
+
+        // Listen for game over event and navigate to the end game screen
+        socket.on('navigate_to_end_game', (data) => {
+            console.log("Game over! Navigating to end game...");
+            window.location.href = `/end_game/${data.room}`;
+        });
+    // Handle navigation to lobby
+    socket.on('navigate_to_lobby', (data) => {
+        console.log("Navigating to lobby...");
+        window.location.href = `/lobby/${data.room}`;
+    });
+
+    // Handle reset button click
+    function resetGame() {
+        const gameCode = "{{ code }}";  // Use the game code from the template context
+        window.location.href = `/reset_game/${gameCode}`;  // Navigate to reset the game
+    }
+    // Join the game room
+    socket.on('connect', () => {
+        socket.emit('join', { room: room });  // Ensure rejoining the room
+        console.log("Joined room:", room);
+    });
     </script>
+
+<button id="reset-button" onclick="resetGame()">Reset Game</button>
     
 </body>
 </html>

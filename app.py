@@ -41,7 +41,7 @@ with open('questions.txt', 'r') as f:
 
 def get_random_question():
     return random.choice(questions)
-
+   
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -49,9 +49,9 @@ def home():
     if request.method == 'POST':
         action = request.form.get('action')
         if action == 'create':
-            game_code = ''.join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890", k=6))
+            game_code = ''.join(random.choices("1234567890", k=4))
             while game_code in games:  # Ensure unique code
-                game_code = ''.join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890", k=6))
+                game_code = ''.join(random.choices("1234567890", k=4))
             games[game_code] = {
                 'players': [],
                 'points': {},
@@ -77,7 +77,9 @@ def home():
 def lobby(code):
     if code not in games:
         return "<h3>Game not found!</h3>", 404
-    return render_template('lobby.html', code=code, players=games[code]['players'])
+    
+    game = games[code]
+    return render_template('lobby.html', code=code, players=game['players'])
 
 @app.route('/setup/<code>')
 def setup(code):
@@ -86,10 +88,12 @@ def setup(code):
 
     game = games[code]
 
-    # Set the first question if not already set
+    # Initialize the first question if not already set
     if not game['current_question']:
         game['current_question'] = get_random_question()
 
+    logger = get_logger(code)
+    logger.info(f"Navigating to setup for room {code}. Current game state: {game}")
     return render_template('setup.html', code=code)
 
 @app.route('/round_start/<code>')
@@ -180,44 +184,82 @@ def handle_add_player(data):
     else:
         emit('error', {'message': 'Name already taken or room not found.'})
 
-@socketio.on('submit_friends')
-def handle_submit_friends(data):
+# @socketio.on('submit_friends')
+# def handle_submit_friends(data):
+#     room = data['room']
+#     friends = data['friends']
+#     logger = get_logger(room)
+#     if room in games and len(friends) >= 5:  # Ensure exactly 5 friends are submitted
+#         games[room]['friends'] = friends
+#         emit('navigate_to_round_start', {'room': room}, room=room)
+#         logger.info(f"Friends list submitted in room {room}: {friends}")
+#         for handler in logger.handlers:
+#             handler.flush()
+#     else:
+#         emit('error', {'message': 'Invalid friends list.'})
+
+@socketio.on('add_friends')
+def handle_add_friends(data):
     room = data['room']
-    friends = data['friends']
+    new_friends = data['friends']
     logger = get_logger(room)
-    if room in games and len(friends) >= 5:  # Ensure exactly 5 friends are submitted
-        games[room]['friends'] = friends
-        emit('navigate_to_round_start', {'room': room}, room=room)
-        logger.info(f"Friends list submitted in room {room}: {friends}")
+
+    if room in games:
+        game = games[room]
+        # Add new friends to the list, avoiding duplicates
+        game['friends'].extend(friend for friend in new_friends if friend not in game['friends'])
+
+        logger.info(f"Friends added in room {room}: {new_friends}")
+        emit('update_friends_list', {'friends': game['friends']}, room=room)  # Broadcast updated list to all players
+
         for handler in logger.handlers:
             handler.flush()
     else:
-        emit('error', {'message': 'Invalid friends list.'})
+        emit('error', {'message': 'Room not found.'})
 
+
+@socketio.on('submit_friends')
+def handle_submit_friends(data):
+    room = data['room']
+    logger = get_logger(room)
+
+    if room in games:
+        emit('navigate_to_round_start', {'room': room}, room=room)  # Navigate to the next screen
+        logger.info(f"Friends list finalized in room {room}: {games[room]['friends']}")
+    else:
+        emit('error', {'message': 'Room not found.'})
 
 @socketio.on('begin_game')
 def handle_begin_game(data):
     room = data['room']
     logger = get_logger(room)
-    if room in games and len(games[room]['players']) >= 2:
+
+    if room in games:
         game = games[room]
-        
-        # Pre-assign the first round's targeted player
-        if len(game['players']) == 2:  # Two-player game
-            game['targeted_player'] = game['players'][1 - game['judge_index']]
-        else:  # Multi-player game, set to first non-judge player
-            game['targeted_player'] = game['players'][(game['judge_index'] + 1) % len(game['players'])]
+        logger.info(f"Begin Game called for room {room}. Current state: {game}")
 
-        # Set the initial question
-        game['current_question'] = get_random_question()
+        if len(game['players']) >= 2:
+            # Ensure the game has required data
+            if not game['current_question']:
+                game['current_question'] = get_random_question()
 
-        logger.info(f"Game started in room {room}, initial targeted player: {game['targeted_player']}")
-        emit('navigate_to_setup', {'room': room}, room=room)
+            if len(game['players']) == 2:
+                game['targeted_player'] = game['players'][1 - game['judge_index']]
+            else:
+                game['targeted_player'] = game['players'][(game['judge_index'] + 1) % len(game['players'])]
 
-        for handler in logger.handlers:
-            handler.flush()
+            logger.info(f"Game successfully started for room {room}. Targeted player: {game['targeted_player']}")
+
+            # Ensure all clients are ready before navigating
+            socketio.sleep(1)  # Optional: Short delay to allow client connection
+            emit('navigate_to_setup', {'room': room}, room=room)
+        else:
+            logger.warning(f"Insufficient players to start game in room {room}. Players: {game['players']}")
+            emit('error', {'message': 'Not enough players to start the game.'})
     else:
-        emit('error', {'message': 'Not enough players to start the game.'})
+        logger.error(f"Begin Game attempted for non-existent room {room}.")
+        emit('error', {'message': 'Room not found.'})
+
 
 @socketio.on('friend_selected')
 def handle_friend_selected(data):
@@ -261,10 +303,12 @@ def handle_judge_guess(data):
 
         # Check for a winner (10 points)
         for player, points in game['points'].items():
-            if points >= 10:
+            if points >= 2:
                 logger.info(f"Game over! {player} has reached 10 points in room {room}")
-                emit('navigate_to_end_game', {'room': room}, room=room)  # Emit event to clients
+                emit('navigate_to_end_game', {'room': room, 'winner': player, 'scores': game['points']}, room=room)
                 return  # Stop further execution to avoid conflicting emits
+
+
 
         # Proceed to results page if no winner
         emit('navigate_to_results', {'room': room}, room=room)
@@ -272,6 +316,7 @@ def handle_judge_guess(data):
 
         for handler in logger.handlers:
             handler.flush()
+
 
 
 @app.route('/results/<code>')
@@ -353,6 +398,29 @@ def handle_target_selected(data):
 
         for handler in logger.handlers:
             handler.flush()
+
+@app.route('/reset_game/<code>')
+def reset_game(code):
+    if code in games:
+        logger = get_logger(code)
+        logger.info(f"Game with code {code} is being reset.")
+
+        # Retain players but reset the rest of the game state
+        games[code].update({
+            'points': {player: 0 for player in games[code]['players']},
+            'judge_index': 0,
+            'friends': [],
+            'targeted_player': '',
+            'current_question': '',
+            'selected_friend': '',
+            'judge_guess': ''
+        })
+
+        # Notify all players to navigate to the lobby
+        socketio.emit('navigate_to_lobby', {'room': code}, room=code)
+        logger.info(f"All players in room {code} redirected to the lobby.")
+
+    return redirect(url_for('lobby', code=code))
 
 
 

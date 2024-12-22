@@ -8,70 +8,65 @@
     <h1>Setup Common Friends</h1>
     <p>Enter the names of your friends:</p>
 
+    <!-- Form for adding friends -->
     <form id="friends_form">
         <div id="friends_container">
-            <label>Friend 1:</label> 
-            <input type="text" name="friends[]" required>
+            <label>Friend:</label> 
+            <input type="text" id="friend_input" required>
         </div>
         <button type="button" id="add_friend">Add Friend</button>
         <button type="button" id="submit_friends">Submit</button>
     </form>
 
+    <!-- New section for displaying added friends -->
+    <h2>Friends Added</h2>
+    <ul id="added_friends_list">
+        <!-- Dynamically updated friends list will appear here -->
+    </ul>
+
     <script>
         const socket = io.connect();
         const room = "{{ code }}";
-
+    
         // Join the game room
         socket.emit('join', { room: room });
-
-        // Add friend input field
+    
+        // Handle "Add Friend" button click
         document.getElementById('add_friend').addEventListener('click', () => {
-            const container = document.getElementById('friends_container');
-            const inputCount = container.querySelectorAll('input').length + 1;
+            const friendInput = document.getElementById('friend_input');
+            const friendName = friendInput.value.trim();
 
-            const label = document.createElement('label');
-            label.textContent = `Friend ${inputCount}:`;
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.name = 'friends[]';
-            input.required = true;
-
-            container.appendChild(document.createElement('br')); // Add line break
-            container.appendChild(label);
-            container.appendChild(input);
-        });
-
-        // Submit the friends list
-        document.getElementById('submit_friends').addEventListener('click', () => {
-            const friends = Array.from(document.querySelectorAll('input[name="friends[]"]'))
-                                 .map(input => input.value.trim())
-                                 .filter(value => value);
-
-            if (friends.length > 0) {
-                console.log("Emitting submit_friends:", { room: room, friends: friends });
-                socket.emit('submit_friends', { room: room, friends: friends });
+            if (friendName) {
+                socket.emit('add_friends', { room: room, friends: [friendName] }); // Emit the new friend to the server
+                friendInput.value = ''; // Clear the input field
             } else {
-                alert("Please enter at least one friend.");
+                alert("Please enter a friend's name.");
             }
         });
+    
+        // Handle "Submit" button click
+        document.getElementById('submit_friends').addEventListener('click', () => {
+            console.log("Navigating to round start...");
+            socket.emit('submit_friends', { room: room }); // Notify server to navigate
+        });
+    
+        // Listen for updated friends list
+        socket.on('update_friends_list', (data) => {
+            const listContainer = document.getElementById('added_friends_list');
+            listContainer.innerHTML = ''; // Clear the existing list
+    
+            data.friends.forEach(friend => {
+                const listItem = document.createElement('li');
+                listItem.textContent = friend; // Add friend name to the list
+                listContainer.appendChild(listItem);
+            });
+        });
 
-        // Navigate to Round Start (for > 2 players)
-        socket.on('navigate_to_round_start', data => {
-            console.log("Navigating to Round Start:", data);
+        // Navigate to the next screen upon server instruction
+        socket.on('navigate_to_round_start', (data) => {
             window.location.href = `/round_start/${data.room}`;
         });
 
-        // Navigate to Gameplay (for exactly 2 players)
-        socket.on('navigate_to_gameplay', data => {
-            console.log("Navigating to Gameplay:", data);
-            window.location.href = `/gameplay/${data.room}`;
-        });
-
-        // Handle errors
-        socket.on('error', message => {
-            alert(message.message);
-        });
     </script>
 </body>
 </html>
