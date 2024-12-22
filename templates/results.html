@@ -86,6 +86,38 @@
         socket.onAny((event, ...args) => {
             console.log(`Unexpected event received: ${event}`, args);
         });
+
+        // Rejoin room and request the latest state
+socket.on('reconnect', () => {
+    console.log("Reconnected to server. Rejoining room:", room);
+    socket.emit('reconnect', { room: room });
+});
+
+// Handle game state updates
+socket.on('update_state', (data) => {
+    console.log("Received updated state:", data);
+
+    const { current_screen, game_state } = data;
+
+    // Navigate to the correct screen based on the server's current state
+    switch (current_screen) {
+        case 'setup':
+            window.location.href = `/setup/${room}`;
+            break;
+        case 'round_start':
+            window.location.href = `/round_start/${room}`;
+            break;
+        case 'gameplay':
+            window.location.href = `/gameplay/${room}`;
+            break;
+        case 'judge_guess':
+            window.location.href = `/judge_guess/${room}`;
+            break;
+        default:
+            console.log("Unknown screen state:", current_screen);
+    }
+});
+
     </script>
 </body>
 </html>

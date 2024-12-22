@@ -18,6 +18,9 @@ LOG_DIR = 'logs'
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
+
+
+
 def get_logger(game_code):
     logger = logging.getLogger(game_code)
     if not logger.handlers:
@@ -42,6 +45,34 @@ with open('questions.txt', 'r') as f:
 def get_random_question():
     return random.choice(questions)
    
+@socketio.on('reconnect')
+def handle_reconnect(data):
+    room = data['room']
+    logger = get_logger(room)
+    if room in games:
+        join_room(room)
+        game = games[room]
+        logger.info(f"Client reconnected to room {room}. Sending updated game state.")
+
+        # Determine the current screen and send the game state
+        current_screen = determine_current_screen(game)
+        emit('update_state', {
+            'current_screen': current_screen,
+            'game_state': game
+        }, room=request.sid)  # Send only to the reconnecting client
+    else:
+        logger.warning(f"Reconnect attempted for non-existent room: {room}")
+        emit('error', {'message': 'Room not found.'}, room=request.sid)
+
+def determine_current_screen(game):
+    """Determine the current screen based on game state."""
+    if game['selected_friend']:
+        return 'judge_guess'
+    elif game['targeted_player']:
+        return 'gameplay'
+    elif game['current_question']:
+        return 'round_start'
+    return 'setup'
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -431,8 +462,8 @@ def reset_game(code):
 
 
 if __name__ == "__main__":
-    socketio.run(app, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=False)
+    #socketio.run(app, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=False)
 
     
-    #socketio.run(app, host='127.0.0.1', port=5000, debug=True)
+    socketio.run(app, host='127.0.0.1', port=5000, debug=True)
 
