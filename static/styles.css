@@ -1,0 +1,118 @@
+/* styles.css */
+
+/* Global Reset */
+body, h1, h2, h3, p, ul, li, button, input {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Global Styling */
+body {
+    font-family: 'Orbitron', sans-serif;
+    background: linear-gradient(135deg, #1e0035, #47008f, #ff00e5, #ffa500);
+    background-size: 400% 400%;
+    animation: neonBackground 10s ease infinite;
+    color: #ffffff;
+    text-align: center;
+}
+
+/* Neon Animation */
+@keyframes neonBackground {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Heading Styles */
+h1, h2 {
+    text-shadow: 0 0 10px #ffffff, 0 0 20px #ff00e5, 0 0 30px #ff00e5, 0 0 40px #ff00e5, 0 0 50px #ffa500;
+}
+
+/* List Styling */
+ul {
+    list-style-type: none;
+    padding: 20px;
+}
+
+ul li {
+    font-size: 18px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    margin: 10px 0;
+    text-shadow: 0 0 5px #ffffff, 0 0 10px #ffa500;
+}
+
+/* Button Styles */
+button {
+    background: linear-gradient(90deg, #ff00e5, #ffa500);
+    border: none;
+    color: #ffffff;
+    padding: 15px 30px;
+    margin: 15px;
+    font-size: 18px;
+    border-radius: 30px;
+    cursor: pointer;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px #ffffff, 0 0 20px #ff00e5;
+    box-shadow: 0 0 20px #ff00e5, 0 0 30px #ffa500;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 40px #ff00e5, 0 0 60px #ffa500;
+}
+
+/* Input Fields */
+input[type="text"] {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #ff00e5;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 10px;
+    width: 300px;
+    font-size: 16px;
+    text-align: center;
+    margin: 10px 0;
+    text-shadow: 0 0 5px #ffffff;
+}
+
+input[type="text"]::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Footer (Optional) */
+footer {
+    margin-top: 30px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 5px #ffffff;
+}
+
+/* Mobile-Specific Adjustments */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px; /* Scale down font sizes */
+        text-align: left; /* Align text for easier reading */
+    }
+
+    h1, h2 {
+        font-size: 22px; /* Reduce headings size */
+    }
+
+    ul li {
+        font-size: 16px; /* Smaller list items */
+    }
+
+    button {
+        width: 90%; /* Full-width buttons for easier tapping */
+        margin: 10px auto; /* Center buttons */
+    }
+
+    input[type="text"] {
+        width: 90%; /* Full-width input fields */
+        font-size: 14px; /* Smaller input text */
+    }
+}
