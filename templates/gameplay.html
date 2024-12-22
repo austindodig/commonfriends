@@ -9,7 +9,7 @@
  
 </head>
 <body>
-    <h1>{{ targeted_player }}, Question: <span id="question">{{ question }}</span></h1>
+    <h1>{{ targeted_player }},</h1><h1> Question: <span id="question">{{ question }}</span></h1>
 
 
     <h3>Select a Friend:</h3>
@@ -85,7 +85,7 @@ socket.on('navigate_to_end_game', (data) => {
         console.log("Joined room:", room);
     });
     </script>
-
+<br><br>
 <button id="reset-button" onclick="resetGame()">Reset Game</button>
 </body>
 </html>

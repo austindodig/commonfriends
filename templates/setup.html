@@ -10,7 +10,9 @@
 </head>
 <body>
     <h1>Setup Common Friends</h1>
-    <p>Enter the names of your friends:</p>
+    <br>
+    <p>Enter the names of friends or people known by all players:</p>
+    <br>
 
     <!-- Form for adding friends -->
     <form id="friends_form">
@@ -19,7 +21,7 @@
             <input type="text" id="friend_input" required>
         </div>
         <button type="button" id="add_friend">Add Friend</button>
-        <button type="button" id="submit_friends">Submit</button>
+        <button type="button" id="submit_friends">Start Game!</button>
     </form>
 
     <!-- New section for displaying added friends -->
@@ -34,6 +36,12 @@
     
         // Join the game room
         socket.emit('join', { room: room });
+
+        socket.on('connect', () => {
+            console.log("Connected to the server, joining room:", room);
+            socket.emit('join', { room: room });
+        });
+
     
         // Handle "Add Friend" button click
         document.getElementById('add_friend').addEventListener('click', () => {

@@ -224,9 +224,14 @@ def handle_submit_friends(data):
     logger = get_logger(room)
 
     if room in games:
-        emit('navigate_to_round_start', {'room': room}, room=room)  # Navigate to the next screen
-        logger.info(f"Friends list finalized in room {room}: {games[room]['friends']}")
+        logger.info(f"Finalizing friends for room {room}. Broadcasting navigation.")
+        
+        # Emit to all players in the room
+        emit('navigate_to_round_start', {'room': room}, room=room)
+
+        logger.info(f"Navigation to round_start broadcasted for room {room}.")
     else:
+        logger.error(f"Room not found during submit_friends: {room}")
         emit('error', {'message': 'Room not found.'})
 
 @socketio.on('begin_game')
@@ -426,8 +431,8 @@ def reset_game(code):
 
 
 if __name__ == "__main__":
-    socketio.run(app, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=False)
+    #socketio.run(app, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=False)
 
     
-    #socketio.run(app, host='127.0.0.1', port=5000, debug=True)
+    socketio.run(app, host='127.0.0.1', port=5000, debug=True)
 
