@@ -8,6 +8,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
+    <audio id="backgroundMusic" autoplay loop>
+        <source src="{{ url_for('static', filename='sounds/beat.mp3') }}" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
     <h1>Setup Common Friends</h1>
     <br>
     <p>Enter the names of friends or people known by all players:</p>
