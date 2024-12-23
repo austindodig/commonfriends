@@ -9,21 +9,22 @@
 
 </head>
 <body>
-    <h1>Round Results</h1>
+    <h1>Round Results</h1><br>
 
     <!-- Display Judge's Guess -->
-    <h3>{{ judge }}'s Guess: {{ judge_guess }}</h3>
+    <h3>{{ judge }}'s Guess: {{ judge_guess }}</h3><br>
 
     <!-- Display Targeted Player's Selected Friend -->
-    <h3>{{ targeted_player }}'s Selected Friend: {{ selected_friend }}</h3>
+    <h3>{{ targeted_player }}'s Selected Friend: {{ selected_friend }}</h3><br>
 
     <!-- Correct or Incorrect Guess Message -->
-    {% if match %}
-        <h3 style="color: green;">Correct Guess! Point awarded to {{ judge }}.</h3>
+   <ul><li> {% if match %}
+        <h2 style="color: green;">Correct Guess! Point awarded to {{ judge }}</h2>
     {% else %}
-        <h3 style="color: red;">Incorrect Guess! Point awarded to {{ targeted_player }}.</h3>
+        <h2 style="color: rgb(159, 15, 15);">Incorrect Guess! Point awarded to {{ targeted_player }}.</h2>
     {% endif %}
-
+    </li></ul>
+<br>
     <!-- Display Updated Scores -->
     <h3>Scores:</h3>
     <ul>

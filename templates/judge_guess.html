@@ -10,15 +10,15 @@
 </head>
 <body>
     
-    <h1>{{ judge }},</h1>
-    <h1>Guess who {{ targeted_player }} selected!</h1>
-    <h3>Question: {{ question }}</h3>
+    <h1>{{ judge }},</h1><br>
+    <h3>Guess who {{ targeted_player }} selected!</h3><br>
+    <h2> {{ question }}</h2><br><br>
 
-    <h3>Select a Friend:</h3>
+    <h3>Select a Friend:</h3><br>
     {% for friend in friends %}
         <button onclick="makeGuess('{{ friend }}')">{{ friend }}</button>
     {% endfor %}
-
+<br><br><br><br>
     <h3>Scores:</h3>
     <ul>
         {% for player, score in scores.items() %}

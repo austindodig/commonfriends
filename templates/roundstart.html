@@ -1,23 +1,21 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Round Start</title>
-        <!-- Add the Socket.IO library -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
-        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+    <title>Round Start</title>
+    <!-- Add the Socket.IO library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
 
-    </head>
-    
 <body>
-    <h1>Start Round</h1>
-    <h2>Current Player: {{ judge }}</h2>
-    <h3>Question: <span id="question">{{ question }}</span></h3>
-
+    <h1>Start Round</h1><br>
+    <h2>Current Player: {{ judge }}</h2><br>
+    <h3><span id="question">{{ question }}</span></h3><br>
 
     {% if players|length > 2 %}
-    <h3>Select a Player to Target:</h3>
+    <h2>Select a Player to Target:</h2><br>
     <ul>
         {% for player in players %}
             {% if player != judge %}
@@ -34,91 +32,84 @@
     </script>
     {% endif %}
 
+    <audio id="selectSound" src="{{ url_for('static', filename='sounds/whoosh.mp3') }}"></audio>
+
     <script>
         const socket = io();
         const room = "{{ code }}";  // Ensure this is defined at the top of the script
         console.log("Room code:", room);
-    
+
         // Join the game room when the page loads
         socket.emit('join', { room: room });
         console.log("Joined room:", room);
-    
+
         // Emit when the judge selects a player to target
         function selectTarget(player) {
-        console.log("Emitting 'target_selected' event. Target:", player, "Room:", room);
-        socket.emit('target_selected', { room: room, targeted_player: player });
-    }
+            console.log("Emitting 'target_selected' event. Target:", player, "Room:", room);
+            const selectSound = document.getElementById('selectSound');
+            selectSound.play(); // Play the sound effect
+            socket.emit('target_selected', { room: room, targeted_player: player });
+        }
 
-    
         // Listen for navigation to gameplay
         socket.on('navigate_to_gameplay', (data) => {
             console.log("Navigating to gameplay...");
             window.location.href = `/gameplay/${data.room}`;
         });
-    
+
         // Handle errors
         socket.on('error', (data) => {
             console.error("Error received:", data.message);
             alert("Error: " + data.message);
         });
-    
+
         // Debug connection
         socket.on('connect', () => {
             console.log("Socket.IO connected successfully.");
         });
 
-    // Join the game room
-    socket.emit('join', { room: room });
-    console.log("Joined room:", room);
+        // Listen for the same question to be updated across all players
+        socket.on('update_question', data => {
+            console.log("Received updated question:", data.question);
+            document.getElementById('question').innerText = data.question;
+        });
 
-    // Listen for the same question to be updated across all players
-    socket.on('update_question', data => {
-        console.log("Received updated question:", data.question);
-        document.getElementById('question').innerText = data.question;
-    });
+        // Listen for navigation to the end game
+        socket.on('navigate_to_end_game', (data) => {
+            console.log("Game over! Navigating to end game...");
+            window.location.href = `/end_game/${data.room}`;
+        });
 
-    // Listen for navigation to the end game
-socket.on('navigate_to_end_game', (data) => {
-    console.log("Game over! Navigating to end game...");
-    window.location.href = `/end_game/${data.room}`;
-});
+        // Rejoin room and request the latest state
+        socket.on('reconnect', () => {
+            console.log("Reconnected to server. Rejoining room:", room);
+            socket.emit('reconnect', { room: room });
+        });
 
-// Rejoin room and request the latest state
-socket.on('reconnect', () => {
-    console.log("Reconnected to server. Rejoining room:", room);
-    socket.emit('reconnect', { room: room });
-});
+        // Handle game state updates
+        socket.on('update_state', (data) => {
+            console.log("Received updated state:", data);
 
-// Handle game state updates
-socket.on('update_state', (data) => {
-    console.log("Received updated state:", data);
+            const { current_screen, game_state } = data;
 
-    const { current_screen, game_state } = data;
-
-    // Navigate to the correct screen based on the server's current state
-    switch (current_screen) {
-        case 'setup':
-            window.location.href = `/setup/${room}`;
-            break;
-        case 'round_start':
-            window.location.href = `/round_start/${room}`;
-            break;
-        case 'gameplay':
-            window.location.href = `/gameplay/${room}`;
-            break;
-        case 'judge_guess':
-            window.location.href = `/judge_guess/${room}`;
-            break;
-        default:
-            console.log("Unknown screen state:", current_screen);
-    }
-});
-
-
+            // Navigate to the correct screen based on the server's current state
+            switch (current_screen) {
+                case 'setup':
+                    window.location.href = `/setup/${room}`;
+                    break;
+                case 'round_start':
+                    window.location.href = `/round_start/${room}`;
+                    break;
+                case 'gameplay':
+                    window.location.href = `/gameplay/${room}`;
+                    break;
+                case 'judge_guess':
+                    window.location.href = `/judge_guess/${room}`;
+                    break;
+                default:
+                    console.log("Unknown screen state:", current_screen);
+            }
+        });
     </script>
-    
-    
-    
-    
 </body>
 </html>

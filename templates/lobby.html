@@ -6,14 +6,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 </head>
 <body>
-    <h1>Game Lobby</h1>
-    <h3>Game Code: {{ code }}</h3>
+    <h1>Game Lobby</h1><br>
+    <h2>Game Code: {{ code }}</h2>
 
     <div>
-        <label for="player_name">Enter your name:</label>
+        <label for="player_name"><strong>Enter your name: </strong></label>
         <input type="text" id="player_name">
         <button onclick="addPlayer()">Add Player</button>
     </div>
@@ -30,9 +29,11 @@
     <script>
         const socket = io.connect();
         const room = "{{ code }}";
-        
+        const clickSound = new Audio('{{ url_for("static", filename="sounds/whoosh.mp3") }}');
+
         // Ensure clients join the room
         socket.emit('join', { room: room });
+
         // Function to add player
         function addPlayer() {
             const name = document.getElementById('player_name').value.trim();
@@ -44,14 +45,25 @@
         }
 
         // Listen for updated player list
+        let previousPlayers = []; // Track the previous list of players
+
         socket.on('update_players', data => {
             const playerList = document.getElementById('player_list');
             playerList.innerHTML = ""; // Clear existing list
+
             data.players.forEach(player => {
                 const li = document.createElement('li');
                 li.textContent = player;
                 playerList.appendChild(li);
             });
+
+            // Play sound if the new player list is longer than the previous one
+            if (data.players.length > previousPlayers.length) {
+                clickSound.play();
+            }
+
+            // Update the previous players list
+            previousPlayers = [...data.players];
         });
 
         // Handle errors
@@ -71,36 +83,35 @@
         });
 
         // Rejoin room and request the latest state
-socket.on('reconnect', () => {
-    console.log("Reconnected to server. Rejoining room:", room);
-    socket.emit('reconnect', { room: room });
-});
+        socket.on('reconnect', () => {
+            console.log("Reconnected to server. Rejoining room:", room);
+            socket.emit('reconnect', { room: room });
+        });
 
-// Handle game state updates
-socket.on('update_state', (data) => {
-    console.log("Received updated state:", data);
+        // Handle game state updates
+        socket.on('update_state', (data) => {
+            console.log("Received updated state:", data);
 
-    const { current_screen, game_state } = data;
+            const { current_screen, game_state } = data;
 
-    // Navigate to the correct screen based on the server's current state
-    switch (current_screen) {
-        case 'setup':
-            window.location.href = `/setup/${room}`;
-            break;
-        case 'round_start':
-            window.location.href = `/round_start/${room}`;
-            break;
-        case 'gameplay':
-            window.location.href = `/gameplay/${room}`;
-            break;
-        case 'judge_guess':
-            window.location.href = `/judge_guess/${room}`;
-            break;
-        default:
-            console.log("Unknown screen state:", current_screen);
-    }
-});
-
+            // Navigate to the correct screen based on the server's current state
+            switch (current_screen) {
+                case 'setup':
+                    window.location.href = `/setup/${room}`;
+                    break;
+                case 'round_start':
+                    window.location.href = `/round_start/${room}`;
+                    break;
+                case 'gameplay':
+                    window.location.href = `/gameplay/${room}`;
+                    break;
+                case 'judge_guess':
+                    window.location.href = `/judge_guess/${room}`;
+                    break;
+                default:
+                    console.log("Unknown screen state:", current_screen);
+            }
+        });
     </script>
 </body>
 </html>

@@ -5,36 +5,64 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4em; /* Larger font size */
+            line-height: 1.8; /* Adds padding between lines */
+            padding: 20px; /* Adds padding around the content */
+            background-color: #121212; /* Dark background for a modern look */
+            color: #f0f0f0; /* Light text for contrast */
+            text-align: left;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        p {
+            margin-bottom: 20px; /* Adds padding between paragraphs */
+        }
+    </style>
 
 </head>
 <body>
     <h1>Welcome to Common Friends!</h1>
     <br>
-    <h3>Forget the facts... How well do you know people?</h3><br><br>
+    <center><h3>Forget the facts... How well do you know people?</h3></center><br><br>
 
     <!-- Form to Create a New Game -->
     <form method="POST">
-        <button type="submit" name="action" value="create">Create Game</button>
+       <center><button type="submit" name="action" value="create">Create Game</button>
     </form>
-    <br><br><br>
+    <br><br>
     <h4>  ... or join an existing game:</h4>
     <!-- Form to Join an Existing Game -->
     <form method="POST">
         <input type="text" name="code" placeholder="Enter Game Code" required>
-        <button type="submit" name="action" value="join">Join Game</button>
+        <button type="submit" name="action" value="join">Join Game</button></center> 
     </form>
-    <br><br><br><br>
-    <h4>Gameplay: </h4>
-    <h4>- Players agree on a list of people who are known by all players. These can be friends, family, coworkers, celebrities, or anyone else!<br><br>
-        - The more the merrier! Adding more common friends to the list makes the game more interesting, as 5 random friends will be used for each round. <br><br>
-        - On a player's turn they will act as the judge for the round and will choose another player to target. The targeted player reads the question and selects the friend who the question applies to the most.<br><br>
-        - The judge then guesses who the targeted player selected.<br><br>
-        - If the judge is correct, the judge is awarded a point. <br><br>
-        - If the judge is incorrect, the targeted player gets the point.<br><br>
-        - The first player to 10 points wins the game.<br><br>
-        - Be honest in your answers!<br><br>
-        - Grab your favorite beverage and have a great time with your friends!<br><br>
-    </h4>
+    <br><br><br>
+    <h1>Game Instructions</h1>
+    <center><p><strong>Setup:</strong> </center><br>
+    <p><strong>Agree on a "Friends" List:</strong> Players create a list of people known by everyone — friends, family, coworkers, or celebrities!</p>
+    
+    <p><strong>Add More for Fun:</strong> The more names, the better! Five random names are used each round.</p>
+    
+    <center><p><strong>Gameplay:</strong> </center><br>
+
+    <p><strong>Beginning of Round:</strong> Player 1 becomes the judge for the first round, and will rotate each round. The judge selects a player to target. If there are only two players, this step is automatically skipped.
+        
+    <br><p><strong>Target Player's Guess</strong> The targeted player reads the question and picks the friend it fits best.</p>
+    
+    <p><strong>Judge's Guess:</strong> The judge guesses who the target picked.</p>
+    
+    <center><p><strong>Scoring:</strong></p></center>
+    <p><strong>Judge is correct?</strong> The judge earns a point.</p>
+    <p><strong>Judge is incorrect?</strong> The targeted player earns a point.</p>
+    
+    <center><p><strong>Winning:</strong></center><br> First to 10 points wins!</p>
+    
+    <center><p><strong>Rules:</strong></p></center><br> Be honest, grab your favorite beverage, and have fun!</p>
+</body>
 </body>
 </html>

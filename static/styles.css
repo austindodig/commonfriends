@@ -10,9 +10,9 @@ body, h1, h2, h3, p, ul, li, button, input {
 /* Global Styling */
 body {
     font-family: 'Orbitron', sans-serif;
-    background: linear-gradient(135deg, #1e0035, #47008f, #ff00e5, #ffa500);
+    background: linear-gradient(135deg, #1e0035, #47008f, #590851, #f2a922);
     background-size: 400% 400%;
-    animation: neonBackground 10s ease infinite;
+    animation: neonBackground 20s ease infinite;
     color: #ffffff;
     text-align: center;
 }

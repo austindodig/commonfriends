@@ -6,7 +6,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 </head>
 <body>
     <h1>Setup Common Friends</h1>
@@ -33,7 +32,8 @@
     <script>
         const socket = io.connect();
         const room = "{{ code }}";
-    
+        const addFriendSound = new Audio('{{ url_for("static", filename="sounds/whoosh.mp3") }}');
+
         // Join the game room
         socket.emit('join', { room: room });
 
@@ -42,7 +42,6 @@
             socket.emit('join', { room: room });
         });
 
-    
         // Handle "Add Friend" button click
         document.getElementById('add_friend').addEventListener('click', () => {
             const friendInput = document.getElementById('friend_input');
@@ -55,23 +54,33 @@
                 alert("Please enter a friend's name.");
             }
         });
-    
+
         // Handle "Submit" button click
         document.getElementById('submit_friends').addEventListener('click', () => {
             console.log("Navigating to round start...");
             socket.emit('submit_friends', { room: room }); // Notify server to navigate
         });
-    
+
         // Listen for updated friends list
+        let previousFriends = []; // Track the previous friends list
+
         socket.on('update_friends_list', (data) => {
             const listContainer = document.getElementById('added_friends_list');
             listContainer.innerHTML = ''; // Clear the existing list
-    
+
             data.friends.forEach(friend => {
                 const listItem = document.createElement('li');
                 listItem.textContent = friend; // Add friend name to the list
                 listContainer.appendChild(listItem);
             });
+
+            // Play sound if the new friends list is longer than the previous one
+            if (data.friends.length > previousFriends.length) {
+                addFriendSound.play();
+            }
+
+            // Update the previous friends list
+            previousFriends = [...data.friends];
         });
 
         // Navigate to the next screen upon server instruction
@@ -80,36 +89,35 @@
         });
 
         // Rejoin room and request the latest state
-socket.on('reconnect', () => {
-    console.log("Reconnected to server. Rejoining room:", room);
-    socket.emit('reconnect', { room: room });
-});
+        socket.on('reconnect', () => {
+            console.log("Reconnected to server. Rejoining room:", room);
+            socket.emit('reconnect', { room: room });
+        });
 
-// Handle game state updates
-socket.on('update_state', (data) => {
-    console.log("Received updated state:", data);
+        // Handle game state updates
+        socket.on('update_state', (data) => {
+            console.log("Received updated state:", data);
 
-    const { current_screen, game_state } = data;
+            const { current_screen, game_state } = data;
 
-    // Navigate to the correct screen based on the server's current state
-    switch (current_screen) {
-        case 'setup':
-            window.location.href = `/setup/${room}`;
-            break;
-        case 'round_start':
-            window.location.href = `/round_start/${room}`;
-            break;
-        case 'gameplay':
-            window.location.href = `/gameplay/${room}`;
-            break;
-        case 'judge_guess':
-            window.location.href = `/judge_guess/${room}`;
-            break;
-        default:
-            console.log("Unknown screen state:", current_screen);
-    }
-});
-
+            // Navigate to the correct screen based on the server's current state
+            switch (current_screen) {
+                case 'setup':
+                    window.location.href = `/setup/${room}`;
+                    break;
+                case 'round_start':
+                    window.location.href = `/round_start/${room}`;
+                    break;
+                case 'gameplay':
+                    window.location.href = `/gameplay/${room}`;
+                    break;
+                case 'judge_guess':
+                    window.location.href = `/judge_guess/${room}`;
+                    break;
+                default:
+                    console.log("Unknown screen state:", current_screen);
+            }
+        });
     </script>
 </body>
 </html>
